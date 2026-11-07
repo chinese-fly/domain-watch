@@ -2,10 +2,12 @@
 
 from .permute import ALL_RULES, Candidate, Permuter, split_hostname
 from .resolver import DnsResolver, FakeResolver, Resolution
+from .score import RiskScore, score_candidate
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "ALL_RULES", "Candidate", "Permuter", "split_hostname",
-    "DnsResolver", "FakeResolver", "Resolution", "__version__",
+    "DnsResolver", "FakeResolver", "Resolution",
+    "RiskScore", "score_candidate", "__version__",
 ]
