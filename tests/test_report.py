@@ -1,8 +1,13 @@
 """Report rendering and end-to-end scanner tests."""
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from dwatch.report import Row, render_json, render_markdown, render_table
+from dwatch.resolver import FakeResolver
+from dwatch.scanner import Scanner
+from dwatch.store import Store
 
 
 def row(domain, score=50, band="medium", rule="homoglyph", ips=("1.2.3.4",), reasons=("resolves",)):
@@ -93,6 +98,75 @@ class TestJsonRender(unittest.TestCase):
         o = Observation("n.com", "homoglyph", 90, "high", (), (), ())
         payload = render_json([], domain="x.com", diff=Diff([o], [], []))
         self.assertEqual(payload["changes"]["appeared"], ["n.com"])
+
+
+class TestScannerEndToEnd(unittest.TestCase):
+    def test_only_resolving_filters_dead(self):
+        resolver = FakeResolver({"examp1e.com": ("1.2.3.4",)})
+        result = Scanner("example.com", resolver=resolver, rules=("homoglyph", "omission")).run()
+        self.assertTrue(all(r.ips for r in result.rows))
+        self.assertLess(len(result.rows), result.candidates)
+
+    def test_include_dead_keeps_everything(self):
+        resolver = FakeResolver({"examp1e.com": ("1.2.3.4",)})
+        live = Scanner("example.com", resolver=resolver, rules=("omission",)).run()
+        dead = Scanner("example.com", resolver=resolver, rules=("omission",),
+                       only_resolving=False).run()
+        self.assertGreater(len(dead.rows), len(live.rows))
+        self.assertEqual(len(dead.rows), dead.candidates)
+
+    def test_high_band_detected_for_impersonation(self):
+        resolver = FakeResolver({
+            "example.com": ("93.184.216.34",),
+            "examp1e.com": ("93.184.216.34",),
+        })
+        result = Scanner("example.com", resolver=resolver, rules=("homoglyph",)).run()
+        highs = [r for r in result.rows if r.band == "high"]
+        self.assertEqual(len(highs), 1)
+        self.assertEqual(highs[0].domain, "examp1e.com")
+
+    def test_max_candidates_caps_work(self):
+        resolver = FakeResolver({})
+        result = Scanner("example.com", resolver=resolver, max_candidates=5,
+                         only_resolving=False).run()
+        self.assertEqual(result.candidates, 5)
+        self.assertEqual(len(result.rows), 5)
+
+    def test_scan_result_renders_all_formats(self):
+        resolver = FakeResolver({"example.com": ("1.2.3.4",), "xample.com": ("5.6.7.8",)})
+        result = Scanner("example.com", resolver=resolver, rules=("omission",)).run()
+        self.assertIn("SCORE", result.table())
+        self.assertIn("# Look-alike domain report", result.markdown())
+        self.assertIn("findings", result.json())
+
+
+class TestScannerWithStore(unittest.TestCase):
+    def test_second_run_produces_diff(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "h.sqlite3"
+            rules = ("omission",)
+
+            with Store(db) as store:
+                Scanner("example.com", resolver=FakeResolver({"xample.com": ("1.2.3.4",)}),
+                        rules=rules, store=store).run()
+
+            with Store(db) as store:
+                result = Scanner("example.com",
+                                 resolver=FakeResolver({"xample.com": ("1.2.3.4",),
+                                                        "eample.com": ("5.6.7.8",)}),
+                                 rules=rules, store=store).run()
+                self.assertIsNotNone(result.diff)
+                appeared = [o.domain for o in result.diff.appeared]
+                self.assertIn("eample.com", appeared)
+
+    def test_first_run_has_no_diff(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with Store(Path(tmp) / "h.sqlite3") as store:
+                result = Scanner("example.com",
+                                 resolver=FakeResolver({"xample.com": ("1.2.3.4",)}),
+                                 rules=("omission",), store=store).run()
+                # One run recorded, so there is nothing to compare against yet.
+                self.assertIsNone(result.diff)
 
 
 if __name__ == "__main__":
