@@ -97,7 +97,7 @@ exists rather than a flat list:
 Test suite:
 
 ```text
-$ python -m unittest discover -s tests -t .
+$ python -m unittest      # 108 tests, ~0.1s
 Ran 108 tests in 0.104s
 OK
 ```

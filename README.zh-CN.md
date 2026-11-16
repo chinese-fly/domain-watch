@@ -92,7 +92,7 @@ python -m dwatch rules                                # 列出 15 条规则
 测试：
 
 ```text
-$ python -m unittest discover -s tests -t .
+$ python -m unittest      # 108 tests, ~0.1s
 Ran 108 tests in 0.104s
 OK
 ```
