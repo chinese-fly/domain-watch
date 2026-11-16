@@ -151,19 +151,26 @@ OK
 - **没有限速。** 261 个候选就是 261 次查询一起发。请从你被允许产生 DNS 流量的
   基础设施上运行。
 
-## 来源与改动
+## 规则设计
 
-字符替换表和置换规则集合移植自 [dnstwist](https://github.com/elceef/dnstwist)
-（作者 Marcin Ulikowski，Apache License 2.0）。具体改了什么：
+15 条规则按利用的东西分组，每一条都要对得上一个钉死精确输出的测试，
+而不是"返回了什么就行"：
 
-- 常量抽到 `dwatch/glyphs.py`（由脚本从原表生成，不是手抄）
-- 规则重写为纯函数，输入是 `(label, tld, words, tld_pool)`
-- 修了 `plural`：上游把后缀插在单词中间（`example` → `exasmple`），
-  永远生成不了任何人会输入的形态
-- 域名切分加了复合后缀表，`example.co.uk` 不会把 `co` 当成主标签
-- 解析、打分、历史、差异、报告全部是新写的
+| 分组 | 规则 | 利用的是什么 |
+|---|---|---|
+| 视觉混淆 | `homoglyph`、`cyrillic`、`bitsquatting` | 骗人的眼睛，不是机器 |
+| 手指打滑 | `insertion`、`omission`、`repetition`、`transposition`、`replacement` | QWERTY 相邻键 |
+| 词义变体 | `hyphenation`、`vowel-swap`、`plural`、`addition`、`dictionary` | 品牌被念出来 / 写出来的方式 |
+| 基础设施 | `subdomain`、`tld-swap` | 会敲完整 URL 的人 |
 
-Apache-2.0，与上游表一致。
+两处刻意不走朴素写法：
+
+- **`plural` 用追加。** 把后缀插在单词中间任意位置（`example` → `exasmple`）
+  会生成没人会输入的字符串。这里用追加，带连字符的标签则逐段变形。
+- **`tld-swap` 需要显式给池子。** 不给 `--tld-pool` 就什么都不产出，
+  而不是生成全部 1,500 个 TLD 去打爆解析器。
+
+Apache-2.0。
 
 ## 依赖
 
@@ -175,7 +182,7 @@ Python 3.10+，只用标准库——没有 `requests`，没有 `dnspython`，没
 
 ```text
 dwatch/
-  glyphs.py     替换表（移植）
+  glyphs.py     替换表
   permute.py    15 条规则 + 域名切分
   resolver.py   多线程 DNS，可替换以便测试
   score.py      加权信号，可追溯

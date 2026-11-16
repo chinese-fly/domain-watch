@@ -1,10 +1,10 @@
 """Risk scoring for a resolving look-alike domain.
 
-dnstwist prints a table and leaves the judgement to the reader. A monitoring
-job cannot do that -- it needs a number so it can page someone at 3am without
-waking them for a parked domain. The score here is intentionally small and
-auditable rather than a black box: every point is traceable to one signal,
-and `explain()` returns the breakdown so a report can show its work.
+A candidate table leaves the judgement to the reader. A monitoring job cannot
+do that -- it needs a number so it can page someone at 3am without waking them
+for a parked domain. The score here is intentionally small and auditable
+rather than a black box: every point is traceable to one signal, and
+`explain()` returns the breakdown so a report can show its work.
 """
 
 from __future__ import annotations

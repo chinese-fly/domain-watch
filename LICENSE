@@ -4,13 +4,11 @@ domain-watch
 
 Copyright 2026 the domain-watch authors
 
-This product includes software ported from dnstwist
-(https://github.com/elceef/dnstwist), Copyright Marcin Ulikowski,
-licensed under the Apache License, Version 2.0.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-The character substitution tables in dwatch/glyphs.py and the set of
-permutation rules derive from that project. Everything else -- resolution,
-scoring, persistence, diffing, reporting -- is original to this repository.
+    http://www.apache.org/licenses/LICENSE-2.0
 
 -------------------------------------------------------------------------
 

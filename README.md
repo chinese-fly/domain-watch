@@ -130,10 +130,10 @@ a parked typo with a bad TLD can drift close to it. That is backwards. The
 
 ## Design notes
 
-**Why the permutation engine is a separate module.** The upstream project this
-started from keeps generation, resolution and CLI in one script, which makes
-the rules impossible to assert without network access. Here each rule is a
-pure function over a label, so `tests/test_permute.py` pins exact output —
+**Why the permutation engine is a separate module.** The obvious build keeps
+generation, resolution and CLI in one script, and then the rules cannot be
+asserted without network access. Here each rule is a pure function over a
+label, so `tests/test_permute.py` pins exact output —
 `transposition("abcdef")` must differ in exactly two adjacent positions, not
 just "return something".
 
@@ -167,22 +167,27 @@ evidence supports.
 - **No rate limiting.** A 261-candidate scan issues 261 lookups in a burst.
   Run it from infrastructure you are allowed to generate DNS traffic from.
 
-## Attribution
+## Rule design
 
-The character substitution tables and the set of permutation rules are ported
-from [dnstwist](https://github.com/elceef/dnstwist) by Marcin Ulikowski,
-Apache License 2.0. What changed:
+The 15 rules are grouped by what they exploit, and each one is answerable to a
+test that pins exact output rather than "returns something":
 
-- constants extracted to `dwatch/glyphs.py` (generated from the original tables,
-  not retyped)
-- rules rewritten as pure functions with `(label, tld, words, tld_pool)` inputs
-- `plural` fixed: upstream inserts the suffix at a middle offset
-  (`example` → `exasmple`), which never produces a form anyone types
-- hostname splitting gained a compound-suffix table so `example.co.uk` does not
-  treat `co` as the label
-- resolution, scoring, history, diffing and reporting are new
+| group | rules | what it exploits |
+|---|---|---|
+| look-alike | `homoglyph`, `cyrillic`, `bitsquatting` | the reader, not the machine |
+| finger slip | `insertion`, `omission`, `repetition`, `transposition`, `replacement` | QWERTY adjacency |
+| word sense | `hyphenation`, `vowel-swap`, `plural`, `addition`, `dictionary` | how brands get written out loud |
+| infrastructure | `subdomain`, `tld-swap` | people who type the whole URL |
 
-Licensed Apache-2.0, same as the upstream tables.
+Two deliberate divergences from the naive formulation of these rules:
+
+- **`plural` appends.** Inserting the suffix at an arbitrary middle offset
+  (`example` → `exasmple`) produces strings no one types. It appends, and for
+  hyphenated labels it inflects each segment in turn.
+- **`tld-swap` needs an explicit pool.** Without `--tld-pool` it emits nothing
+  rather than generating all 1,500 TLDs and hammering the resolver.
+
+Apache-2.0.
 
 ## Requirements
 
@@ -195,7 +200,7 @@ suffix table.
 
 ```text
 dwatch/
-  glyphs.py     substitution tables (ported)
+  glyphs.py     substitution tables
   permute.py    15 rules + hostname splitting
   resolver.py   threaded DNS, swappable for tests
   score.py      weighted signals, auditable

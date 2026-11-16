@@ -1,7 +1,7 @@
 """Character substitution tables used by the permutation engine.
 
-These tables are ported verbatim from dnstwist by Marcin Ulikowski
-(https://github.com/elceef/dnstwist), Apache License 2.0.
+These are data, not logic: look-alike codepoints per TLD, the ASCII glyph
+set, the Latin-to-Cyrillic map and three keyboard layouts, as lookup tables.
 Splitting them out of the engine is what makes the permutation rules
 testable in isolation -- see tests/test_permute.py.
 """

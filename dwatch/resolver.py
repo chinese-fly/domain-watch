@@ -1,10 +1,11 @@
 """DNS resolution, kept separate from the permutation engine on purpose.
 
-dnstwist resolves inside its Scanner thread and writes results straight onto
-the candidate dict, which makes the resolution logic impossible to unit test
-and impossible to swap out. Here a resolver is anything that satisfies the
-`Resolver` protocol, so tests use `FakeResolver` and production uses
-`DnsResolver`. Nothing in this module opens a socket at import time.
+Resolution is I/O, generation is arithmetic. Folding them together makes the
+resolution logic impossible to unit test and impossible to swap out, and it
+also means a network hiccup shows up as a test failure. Here a resolver is
+anything that satisfies the `Resolver` protocol, so tests use `FakeResolver`
+and production uses `DnsResolver`. Nothing in this module opens a socket at
+import time.
 """
 
 from __future__ import annotations

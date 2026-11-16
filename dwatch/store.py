@@ -1,10 +1,9 @@
 """SQLite-backed run history so a scan can be diffed against the last one.
 
 This is the piece that turns a one-shot script into something you can run on
-a cron. dnstwist has no persistence at all -- you get a table on stdout and
-that is the end of it. Without history, "did anything change overnight" is
-unanswerable, which is the only question a monitoring job actually has to
-answer.
+a cron. Without history, "did anything change overnight" is unanswerable,
+which is the only question a monitoring job actually has to answer -- a
+single scan tells you what resolves, not what appeared.
 
 Schema is deliberately narrow: one row per (run, domain) observation, plus a
 runs table for the metadata. Old runs are pruned, not vacuumed, so the file
